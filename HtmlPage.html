@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פודקאסט תנ"ך </title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: 0.3s;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+            }
+
+        .upload-section {
+            background: white;
+            border-top: 5px solid #0d6efd;
+        }
+
+        .filter-section {
+            background: #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .help-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="help-btn" onclick="toggleModal(true)">?</div>
+
+    <div id="infoModal" class="modal-overlay" onclick="toggleModal(false)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>עזרה והנחיות</h3>
+            <p>ההעלאה לא עובדת?
+            נסו לשנות את שם הקובץ לאנגלית בלי תווים מיוחדים ובדקו שהקובץ הוא מסוג mp.3</p>
+            <button class="btn btn-secondary" onclick="toggleModal(false)">סגור</button>
+        </div>
+    </div>
+
+    <div class="container py-5">
+        <h1 class="text-center mb-5">ספריית הפודקאסטים</h1>
+        <div class="card p-4 mb-5 upload-section">
+            <h4 class="mb-4">העלאת פודקאסט חדש</h4>
+            <div class="row g-3">
+                <div class="col-md-6"><input type="text" id="title" class="form-control" placeholder="שם הפודקאסט - שמות המשתתפים והמרואיינים"></div>
+
+                <div class="col-md-3">
+                    <select id="grade" class="form-select">
+                        <option value="" disabled selected>בחר כיתה</option>
+                        <option value="י&quot;א-1">י"א-1</option>
+                        <option value="י&quot;א-2">י"א-2</option>
+                        <option value="י&quot;א-3">י"א-3</option>
+                        <option value="י&quot;א-4">י"א-4</option>
+                        <option value="י&quot;א-5">י"א-5</option>
+                        <option value="י&quot;א-6">י"א-6</option>
+                        <option value="י&quot;א-7">י"א-7</option>
+                        <option value="י&quot;א-8">י"א-8</option>
+                        <option value="י&quot;א-9">י"א-9</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select id="chapter" class="form-select">
+                        <option value="" disabled selected>בחר פרק</option>
+                        <option value="ויקרא י&quot;ט">ויקרא י"ט</option>
+                        <option value="דברים ט&quot;ז">דברים ט"ז</option>
+                        <option value="דברים י&quot;ז">דברים י"ז</option>
+                        <option value="דברים כ'">דברים כ'</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <select id="theme" class="form-select" onchange="updateLawOptions('theme', 'law')">
+                        <option value="" disabled selected>בחר נושא על</option>
+                        <option value="חוקים סוציאליים">חוקים סוציאליים</option>
+                        <option value="חוקי מוסר וערכים">חוקי מוסר וערכים</option>
+                        <option value="חוקי חגים ומועדים">חוקי חגים ומועדים</option>
+                        <option value="חוקי שלטון ומשפט">חוקי שלטון ומשפט</option>
+                        <option value="חוקי מלחמה">חוקי מלחמה</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <select id="law" class="form-select" disabled>
+                        <option value="">בחר קודם נושא...</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6"><input type="file" id="audioFile" class="form-control" accept="audio/*"></div>
+                <div class="col-md-6"><input type="password" id="secretPass" class="form-control" placeholder="סיסמה להעלאה"></div>
+                <div class="col-12"><button onclick="uploadPodcast()" id="uploadBtn" class="btn btn-primary w-100 py-2">העלה פודקאסט לפרויקט</button></div>
+            </div>
+        </div>
+        <div class="filter-section mb-4">
+            <div class="row g-2">
+                <div class="col-md-3">
+                    <select id="filterGrade" class="form-select" onchange="loadPodcasts()">
+                        <option value="">כל הכיתות</option>
+                        <option value="י&quot;א-1">י"א-1</option>
+                        <option value="י&quot;א-2">י"א-2</option>
+                        <option value="י&quot;א-3">י"א-3</option>
+                        <option value="י&quot;א-4">י"א-4</option>
+                        <option value="י&quot;א-5">י"א-5</option>
+                        <option value="י&quot;א-6">י"א-6</option>
+                        <option value="י&quot;א-7">י"א-7</option>
+                        <option value="י&quot;א-8">י"א-8</option>
+                        <option value="י&quot;א-9">י"א-9</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filterTheme" class="form-select" onchange="updateLawOptions('filterTheme', 'filterLaw'); loadPodcasts();">
+                        <option value="חוקים סוציאליים">חוקים סוציאליים</option>
+                        <option value="חוקי מוסר וערכים">חוקי מוסר וערכים</option>
+                        <option value="חוקי חגים ומועדים">חוקי חגים ומועדים</option>
+                        <option value="חוקי שלטון ומשפט">חוקי שלטון ומשפט</option>
+                        <option value="חוקי מלחמה">חוקי מלחמה</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="filterLaw" class="form-select" onchange="loadPodcasts()" disabled>
+                        <option value="">כל החוקים</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="podcastsList" class="row">
+            <p class="text-center">טוען פודקאסטים...</p>
+        </div>
+    </div>
+
+    <script>
+        function toggleModal(show) {
+            document.getElementById('infoModal').style.display = show ? 'flex' : 'none';
+        }
+        var lawsData = {
+            "חוקים סוציאליים": ["פאה", "לקט", "שכחה", "עוללות", "פרט", "חוק העבוט", "השבת משכון", "איסור הלנת שכר"],
+            "חוקי מוסר וערכים": ["איסור רכילות", "לא תעמוד על דם רעך", "איסור קללת חירש", "לפני עיוור לא תיתן מכשול", "איסור עוול במשפט", "איסור שנאה בלב", "מצוות תוכחה", "איסור נקמה ונטירה", "ואהבת לרעך כמוך"],
+            "חוקי חגים ומועדים": ["חוקי המועדים (פסח, שבועות וסוכות)"],
+            "חוקי שלטון ומשפט": ["הקמת מערכת משפט", "חוק המלך", "כתיבת ספר תורה על ידי המלך"],
+            "חוקי מלחמה": ["קריאה לשלום לפני מצור", "איסור כריתת עצי פרי במלחמה", "שחרור מהצבא"]
+        };
+
+        function updateLawOptions(themeId, lawId) {
+            var theme = document.getElementById(themeId).value;
+            var lawSelect = document.getElementById(lawId);
+            lawSelect.innerHTML = '<option value="">כל החוקים / בחר חוק</option>';
+
+            if (theme && lawsData[theme]) {
+                lawSelect.disabled = false;
+                var laws = lawsData[theme];
+                for (var i = 0; i < laws.length; i++) {
+                    var opt = document.createElement('option');
+                    opt.value = laws[i];
+                    opt.innerText = laws[i];
+                    lawSelect.appendChild(opt);
+                }
+            } else {
+                lawSelect.disabled = true;
+            }
+        }
+
+        var S_URL = 'https://cnohqzusmjjbvdsgcwty.supabase.co';
+        var S_KEY = 'sb_publishable_8NCtHzt5sebVtCmPkHbWKQ_Omjx6b69';
+        var mySupabase = supabase.createClient(S_URL, S_KEY);
+
+        async function loadPodcasts() {
+            var grade = document.getElementById('filterGrade').value;
+            var theme = document.getElementById('filterTheme').value;
+            var law = document.getElementById('filterLaw').value;
+
+            var query = mySupabase.from('podcast').select('*').order('created_at', { ascending: false });
+
+            if (grade) { query = query.eq('grade', grade); }
+            if (theme) { query = query.eq('theme', theme); }
+            if (law) { query = query.eq('law', law); }
+
+            var response = await query;
+            var data = response.data;
+            var listDiv = document.getElementById('podcastsList');
+            listDiv.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                listDiv.innerHTML = '<div class="text-center p-5"><h5>לא נמצאו פודקאסטים התואמים לחיפוש שלך</h5></div>';
+                return;
+            }
+            for (var i = 0; i < data.length; i++) {
+                var p = data[i];
+                listDiv.innerHTML += `
+                            <div class="col-md-6 mb-4">
+                                <div class="card p-3">
+                                    <div class="badge bg-primary mb-2" style="width: fit-content;">${p.theme}</div>
+                                    <h5 class="fw-bold">${p.title}</h5>
+                                    <p class="small text-muted mb-2">
+                                        <b>כיתה:</b> ${p.grade} | <b>פרק:</b> ${p.chapter} <br>
+                                        <b>חוק:</b> ${p.law}
+                                    </p>
+                                    <audio controls class="w-100 mt-2">
+                                        <source src="${p.url}" type="audio/mpeg">
+                                    </audio>
+                                </div>
+                            </div>`;
+            }
+        }
+
+        async function uploadPodcast() {
+            if (document.getElementById('secretPass').value !== "תנך123") {
+                return alert("סיסמה שגויה!");
+            }
+
+            var btn = document.getElementById('uploadBtn');
+            var fileInput = document.getElementById('audioFile');
+            var file = fileInput.files[0];
+
+            if (!file) {
+                return alert("בחר קובץ!");
+            }
+
+            btn.disabled = true;
+            btn.innerText = "מעלה את הקובץ...";
+
+            try {
+                var fileName = Date.now() + "_" + file.name;
+                var uploadResponse = await mySupabase.storage.from('files').upload(fileName, file);
+
+                if (uploadResponse.error) { throw uploadResponse.error; }
+
+                var urlData = mySupabase.storage.from('files').getPublicUrl(fileName);
+
+                var dbResponse = await mySupabase.from('podcast').insert([{
+                    title: document.getElementById('title').value,
+                    grade: document.getElementById('grade').value,
+                    chapter: document.getElementById('chapter').value,
+                    theme: document.getElementById('theme').value,
+                    law: document.getElementById('law').value,
+                    url: urlData.data.publicUrl
+                }]);
+
+                if (dbResponse.error) { throw dbResponse.error; }
+
+                alert("הפודקאסט עלה בהצלחה!");
+                location.reload();
+            } catch (err) {
+                alert("שגיאה: " + err.message);
+                btn.disabled = false;
+            }
+        }
+
+        loadPodcasts();
+    </script>
+</body>
+</html>
